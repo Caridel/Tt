@@ -1,0 +1,80 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>포켓몬 소드·실드 EX! 스토리판</title>
+<style>
+body{margin:0;background:#111827;color:#f8fafc;font-family:system-ui,sans-serif}
+main{max-width:850px;margin:auto;padding:16px}.box{background:#1f2937;border:1px solid #475569;border-radius:14px;padding:18px;margin-bottom:12px}
+h1{margin-top:0}.tab{display:flex;gap:7px;flex-wrap:wrap}.tab button,.choice{background:#374151;color:white;border:1px solid #64748b;border-radius:9px;padding:10px 13px;cursor:pointer}.tab button:hover,.choice:hover{background:#4b5563}
+#story{min-height:260px}.speaker{font-weight:800;color:#93c5fd}.text{font-size:19px;line-height:1.7;margin:10px 0 18px}.choices{display:flex;gap:8px;flex-wrap:wrap}.info{color:#cbd5e1;font-size:13px}.hidden{display:none}
+.map{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin-top:12px}.map div{padding:16px 4px;text-align:center;border:1px solid #64748b;border-radius:7px;background:#263244}
+.pokemon{display:grid;grid-template-columns:1fr 1fr;gap:8px}.poke{padding:10px;border:1px solid #64748b;border-radius:9px}
+</style></head><body><main>
+<div class="box"><h1>⚔️🛡️ 포켓몬 소드·실드 EX!</h1><div class="info">스토리 중심 팬게임 프로토타입 · 이동 버튼 없음</div></div>
+<div class="box tab">
+<button data-page="story">📖 글·스토리</button><button data-page="battle">⚔️ 배틀</button>
+<button data-page="map">🗺️ 지도</button><button data-page="pokemon">🔴 포켓몬</button>
+<button data-page="gym">🏟️ 체육관</button>
+</div>
+<div id="story" class="box page"></div>
+<div id="battle" class="box page hidden"><h2>⚔️ 배틀</h2><p id="battleText">현재 전투가 없습니다.</p><button class="choice" onclick="attack()">기술 사용</button> <button class="choice" onclick="throwBall()">포켓볼</button></div>
+<div id="map" class="box page hidden"><h2>🗺️ 가라르 지도</h2><div class="map" id="mapGrid"></div></div>
+<div id="pokemon" class="box page hidden"><h2>🔴 내 포켓몬</h2><div class="pokemon" id="party"></div></div>
+<div id="gym" class="box page hidden"><h2>🏟️ 체육관</h2><p id="gymText">체육관 챌린지를 선택하세요.</p><button class="choice" onclick="gymBattle()">체육관 도전</button></div>
+</main>
+<script>
+const scenes=[
+["주인공","오늘이야. 가라르 챌린지에 참가하는 날이다.","다음"],
+["호프","기다리고 있었어! 우리 형 단델도 너를 만나고 싶어 해.","다음"],
+["단델","두 사람 모두 준비됐나? 오늘부터 새로운 모험이 시작된다!","스타팅 포켓몬 선택"],
+["SYSTEM","염버니, 흥나숭, 울머기 중 하나를 골라라.","염버니 / 흥나숭 / 울머기"],
+["호프","좋아! 나도 파트너를 골랐어. 바로 배틀해 보자!","배틀 시작"],
+["SYSTEM","⚔️ 첫 번째 배틀! 호프의 포켓몬이 나타났다.","공격한다"],
+["호프","좋은 공격이야! 하지만 아직 끝난 게 아니야!","다음 공격"],
+["SYSTEM","💥 마지막 공격이 명중했다! 승리했다.","다음"],
+["SYSTEM","🌿 길을 걷던 중 풀숲이 흔들린다.","야생 포켓몬 확인"],
+["SYSTEM","야생 전기강아지 Lv.3이 나타났다!","싸운다 / 포획"],
+["SYSTEM","포켓볼을 던졌다! 찰칵!","포획 확인"],
+["간호사","포켓몬들이 지쳤군요. 모두 회복해 드릴게요.","치료"],
+["SYSTEM","✨ 모든 포켓몬이 건강해졌다!","다음"],
+["체육관 직원","소드와 실드의 전통을 하나로 합친 통합 체육관 챌린지다.","미션 시작"],
+["SYSTEM","📜 미션: 트레이너를 돌파하고 체육관 관장에게 도달하라!","도전"],
+["체육관 관장","네 힘을 보여줘! 이 승부가 첫 번째 관문이다.","체육관 배틀"],
+["SYSTEM","⚔️ 치열한 배틀 끝에 관장의 마지막 포켓몬이 쓰러졌다!","배지 획득"],
+["체육관 관장","훌륭하다. 이 배지를 받아라.","다음"],
+["소니아","이상해. 고대 기록의 에너지 수치가 갑자기 올라갔어.","조사한다"],
+["소니아","옛 전설에는 검과 방패를 든 두 영웅이 등장해.","전설 조사"],
+["로즈","가라르의 미래를 위해 필요한 일이야.","해머록으로"],
+["SYSTEM","🚨 거대한 에너지가 폭발한다! 에터너스가 나타났다!","에터너스 배틀"],
+["SYSTEM","⚔️ 자시안과 자마젠타가 나타났다!","전설의 힘"],
+["SYSTEM","에터너스의 폭주가 멈췄다.","다음"],
+["단델","이제 마지막 승부다. 챔피언 컵에서 만나자!","챔피언 컵"],
+["SYSTEM","🏆 챔피언 컵 최종 배틀!","최종 배틀"],
+["SYSTEM","전투가 끝난 뒤 새로운 EX 에너지의 흔적이 발견됐다.","EX 조사"],
+["???","아직 끝난 게 아니다. 가라르 깊은 곳에서 무언가 깨어나고 있다.","계속"],
+["SYSTEM","🌌 TO BE CONTINUED...","처음으로"]
+];
+let i=0, party=[["염버니",5,22,22],["흥나숭",5,21,21]],balls=5,badge=0;
+const story=document.getElementById("story");
+function render(){
+ let s=scenes[i];story.innerHTML=`<div class="info">CHAPTER ${Math.min(5,Math.floor(i/5)+1)}</div><div class="speaker">${s[0]}</div><div class="text">${s[1]}</div><div class="choices"></div>`;
+ let c=story.querySelector(".choices");
+ let labels=s[2].includes("/")?s[2].split(" / "):[s[2]];
+ labels.forEach((l,n)=>{let b=document.createElement("button");b.className="choice";b.textContent=l;b.onclick=()=>next(l);c.appendChild(b)});
+}
+function next(label){
+ if(label.includes("스타팅")) party[0][0]="염버니";
+ if(label.includes("포획")) {if(balls>0){balls--;party.push(["전기강아지",3,18,18]);alert("🔴 전기강아지를 포획했다!")}else alert("포켓볼이 없다!")}
+ if(label.includes("배지")) badge=1;
+ if(label==="처음으로"){i=0}else i++;
+ render(); update();
+}
+function attack(){document.getElementById("battleText").textContent="💥 기술이 명중했다! 상대 포켓몬에게 피해를 입혔다."}
+function throwBall(){if(balls>0){balls--;document.getElementById("battleText").textContent="🔴 포켓볼을 던졌다! 야생 포켓몬을 포획했다.";party.push(["야생 포켓몬",3,15,15]);update()}else document.getElementById("battleText").textContent="포켓볼이 없다!"}
+function gymBattle(){document.getElementById("gymText").textContent="⚔️ 체육관 관장과의 배틀! 승리하면 배지를 획득한다.";badge=1;update()}
+function update(){
+document.getElementById("party").innerHTML=party.map(p=>`<div class="poke"><b>${p[0]}</b> Lv.${p[1]}<br>HP ${p[2]}/${p[3]}</div>`).join("");
+document.getElementById("mapGrid").innerHTML=["브래시타운","터프마을","바우마을","라테랄마을","너클시티","해머록","스파이크마을","키르쿠스마을","윈돈","와일드에리어"].map(x=>`<div>${x}</div>`).join("");
+}
+document.querySelectorAll(".tab button").forEach(b=>b.onclick=()=>{document.querySelectorAll(".page").forEach(x=>x.classList.add("hidden"));document.getElementById(b.dataset.page).classList.remove("hidden")});
+render();update();
+</script></body></html>
